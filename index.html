@@ -2,26 +2,53 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Deice Verbiage Simulator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    body { font-family: Arial, sans-serif; padding: 2rem; max-width: 600px; margin: auto; }
-    select, button { font-size: 1rem; margin-top: 1rem; padding: 0.5rem; width: 100%; }
-    .score, .missing { margin-top: 1rem; }
-    .highlight { background-color: #ffdddd; color: red; font-weight: bold; }
-  </style>
+  <link href="style.css" rel="stylesheet" />
 </head>
 <body>
-  <h1>Deice Verbiage Simulator</h1>
-  <label for="scenario">Choose a Scenario:</label>
-  <select id="scenario">
-    <option value="type1">Type I</option>
-    <option value="type4">Type IV</option>
-  </select>
-  <button onclick="startScenario()">Start Scenario</button>
-  <div class="score" id="score"></div>
-  <div class="missing" id="missing"></div>
+  <div class="container">
+    <header>
+      <h1>Deice Verbiage Trainer</h1>
+      <p>Select a scenario and respond with your voice</p>
+    </header>
+
+    <section class="card">
+      <label for="scenario">Scenario</label>
+      <select id="scenario">
+  <option value="type1">Anti-Ice Type I</option>
+  <option value="type4">Anti-Ice Type IV</option>
+  <option value="dual">Dual Fluid Application</option>
+  <option value="request">Request to Deice</option>
+  <option value="complete">Deicing Complete</option>
+  <option value="pad_ready">Notify Pad Ready</option>
+  <option value="temp_alert">Temperature Alert</option>
+  <option value="confirm_equipment_clear">Confirm Equipment Clear</option>
+  <option value="holdover_expired">Holdover Time Expired</option>
+</select>
+<div id="hints" style="margin-top:10px; font-style: italic; color: #555;"></div>
+<div id="score-history" style="margin-top:15px;"><strong>Your Scores:</strong><br><ul id="score-list"></ul></div>
+<label style="margin-top:20px; display:block;"><input type="checkbox" id="instructorMode"> Instructor Mode</label>
+<div id="instructor-log" style="display:none; margin-top:10px;"><strong>Instructor Log:</strong><br><table border="1" cellpadding="5" style="border-collapse:collapse;width:100%"><thead><tr><th>Date</th><th>Scenario</th><th>Score</th><th>User Response</th></tr></thead><tbody id="log-body"></tbody></table></div>
+      <button onclick="startScenario()">🎤 Start Scenario</button>
+    </section>
+
+    <section class="card">
+      <p><strong>Prompt:</strong> <span id="prompt-text"></span></p>
+      <p><strong>Expected:</strong> <span id="expected-text"></span></p>
+      <p><strong>You Said:</strong> <span id="spoken-text"></span></p>
+      
+    <div id="mic-status" class="mic-status" style="display:none;">
+      <img src="mic.png" alt="Listening..." width="48" />
+      <p>Listening...</p>
+    </div>
+    <div id="score" class="score"></div>
+    
+      <div id="missing" class="missing"></div>
+    </section>
+  </div>
+
   <script>
     const scenarios = {
       type1: {
@@ -31,6 +58,34 @@
       type4: {
         prompt: "Inform flight deck of Type IV application including time and brand.",
         expected: "Captain, you have been anti-iced with Type IV, Cryotech Polar Guard X-Tend, at 100%, starting at 13:48. Post deicing/anti-icing check complete, deicing personnel and equipment are safely away."
+      },
+      dual: {
+        prompt: "Inform flight deck of dual application Type I and Type IV.",
+        expected: "Captain, you have been deiced with Type I Cryotech Polar Plus LT, followed by anti-icing with Type IV Cryotech Polar Guard X-Tend at 100%, completed at 13:48. Post deicing/anti-icing check complete, personnel and equipment clear."
+      },
+      request: {
+        prompt: "Request permission to deice.",
+        expected: "Captain, request permission to deice due to contamination present on critical surfaces."
+      },
+      complete: {
+        prompt: "Announce completion of deicing and clear zone.",
+        expected: "Captain, deicing and anti-icing operations are complete. All personnel and equipment are clear of the aircraft."
+      },
+      pad_ready: {
+        prompt: "Notify captain pad is ready for deice.",
+        expected: "Captain, the deice pad is ready. You are cleared to enter when ready."
+      },
+      temp_alert: {
+        prompt: "Notify flight deck of temperature change affecting holdover.",
+        expected: "Captain, be advised the ambient temperature has dropped. Updated holdover time is being recalculated."
+      },
+      confirm_equipment_clear: {
+        prompt: "Confirm all equipment is clear from aircraft.",
+        expected: "Captain, all deicing equipment and personnel are clear from the aircraft. You are good to taxi."
+      },
+      holdover_expired: {
+        prompt: "Notify captain holdover time has expired.",
+        expected: "Captain, your holdover time has expired. We will need to reapply anti-icing fluid before departure."
       }
     };
 
@@ -41,18 +96,22 @@
 
     function speak(text) {
       const utter = new SpeechSynthesisUtterance(text);
-      utter.voice = [...synth.getVoices()].find(v => v.name.includes("Alex")) || synth.getVoices()[0];
+      utter.voice = [...synth.getVoices()].find(v => v.name.includes("Samantha") || v.name.includes("Google US")) || synth.getVoices()[0];
       synth.speak(utter);
     }
 
     function startScenario() {
       const selected = document.getElementById("scenario").value;
       currentScenario = scenarios[selected];
+      document.getElementById("prompt-text").textContent = currentScenario.prompt;
+      document.getElementById("expected-text").textContent = currentScenario.expected;
       speak(currentScenario.prompt);
+      document.getElementById('mic-status').style.display = 'block'; recognition.start();
 
-      recognition.start();
       recognition.onresult = function(event) {
+  document.getElementById('mic-status').style.display = 'none';
         const spokenText = event.results[0][0].transcript;
+        document.getElementById("spoken-text").textContent = spokenText;
         evaluate(spokenText);
       };
     }
@@ -60,7 +119,6 @@
     function evaluate(spoken) {
       const expected = currentScenario.expected.toLowerCase().split(" ");
       const actual = spoken.toLowerCase().split(" ");
-
       let matchCount = 0;
       let missingWords = [];
 
@@ -73,13 +131,75 @@
       });
 
       const score = Math.round((matchCount / expected.length) * 100);
-      document.getElementById("score").innerText = `Score: ${score}%`;
+  logAttempt(currentScenario.label, score, spoken);
+  updateScoreHistory(currentScenario.label, score);
+      document.getElementById("score").textContent = `Score: ${score}%`;
 
-      const highlighted = expected.map(word => 
+      const highlighted = expected.map(word =>
         actual.includes(word) ? word : `<span class="highlight">${word}</span>`
       ).join(" ");
       document.getElementById("missing").innerHTML = `Expected: ${highlighted}`;
     }
-  </script>
+
+    window.onload = () => synth.getVoices();
+  
+document.getElementById("scenario").addEventListener("change", function () {
+  const selected = this.value;
+  const scenario = scenarios.find(s => s.id === selected);
+  if (scenario) {
+    const hintText = scenario.expected.split(" ").slice(0, 4).join(" ");
+    document.getElementById("hints").innerText = "Hint: say something like \"" + hintText + "...\"";
+  }
+});
+
+
+function updateScoreHistory(label, score) {
+  let scores = JSON.parse(localStorage.getItem("scenarioScores")) || {};
+  scores[label] = score;
+  localStorage.setItem("scenarioScores", JSON.stringify(scores));
+  renderScoreHistory();
+}
+
+function renderScoreHistory() {
+  let scores = JSON.parse(localStorage.getItem("scenarioScores")) || {};
+  const list = Object.entries(scores)
+    .map(([scenario, score]) => `<li><strong>${scenario}:</strong> ${score}%</li>`)
+    .join("");
+  document.getElementById("score-list").innerHTML = list;
+}
+
+window.onload = function () {
+  renderScoreHistory();
+};
+
+
+function logAttempt(label, score, response) {
+  let log = JSON.parse(localStorage.getItem("instructorLog")) || [];
+  log.push({
+    date: new Date().toLocaleString(),
+    scenario: label,
+    score: score,
+    response: response
+  });
+  localStorage.setItem("instructorLog", JSON.stringify(log));
+  renderInstructorLog();
+}
+
+function renderInstructorLog() {
+  const enabled = document.getElementById("instructorMode").checked;
+  document.getElementById("instructor-log").style.display = enabled ? "block" : "none";
+
+  if (!enabled) return;
+
+  let log = JSON.parse(localStorage.getItem("instructorLog")) || [];
+  const rows = log.map(entry =>
+    `<tr><td>${entry.date}</td><td>${entry.scenario}</td><td>${entry.score}%</td><td>${entry.response}</td></tr>`
+  ).join("");
+  document.getElementById("log-body").innerHTML = rows;
+}
+
+document.getElementById("instructorMode").addEventListener("change", renderInstructorLog);
+
+</script>
 </body>
 </html>
