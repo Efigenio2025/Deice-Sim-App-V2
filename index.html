@@ -6,27 +6,8 @@
   <title>Deice Verbiage Simulator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="style.css" rel="stylesheet" />
-<style>body { font-family: "Segoe UI", Tahoma, sans-serif; background: #f4f7fa; margin: 0; padding: 20px; text-align: center; }#app { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }select, button, input[type="checkbox"] { padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; margin: 10px 0; }#start-button { background: #007bff; color: white; border: none; cursor: pointer; transition: background 0.3s; border-radius: 50%; width: 60px; height: 60px; font-size: 24px; display: inline-flex; align-items: center; justify-content: center; }#start-button:hover { background: #0056b3; }#hints, #score, #score-history, #instructor-log { margin-top: 20px; text-align: left; }table { width: 100%; border-collapse: collapse; font-size: 14px; }th, td { padding: 8px; border: 1px solid #ddd; }.highlight-correct { background-color: #d4edda; }.highlight-missing { background-color: #fff3cd; }.highlight-incorrect { background-color: #f8d7da; }
-@media (max-width: 600px) {
-  #app {
-    padding: 10px;
-  }
-  select, button {
-    width: 100%;
-    font-size: 18px;
-  }
-  table {
-    font-size: 12px;
-  }
-  #start-button {
-    width: 50px;
-    height: 50px;
-    font-size: 20px;
-  }
-}
-
-</style></head>
-<body><div id="app">
+</head>
+<body>
   <div class="container">
     <header>
       <h1>Deice Verbiage Trainer</h1>
@@ -45,11 +26,9 @@
   <option value="temp_alert">Temperature Alert</option>
   <option value="confirm_equipment_clear">Confirm Equipment Clear</option>
   <option value="holdover_expired">Holdover Time Expired</option>
+
+<option value="scenarioC">Scenario C - Full Body Type I</option>
 </select>
-<div id="hints" style="margin-top:10px; font-style: italic; color: #555;"></div>
-<div id="score-history" style="margin-top:15px;"><strong>Your Scores:</strong><br><ul id="score-list"></ul></div>
-<label style="margin-top:20px; display:block;"><input type="checkbox" id="instructorMode"> Instructor Mode</label>
-<div id="instructor-log" style="display:none; margin-top:10px;"><strong>Instructor Log:</strong><br><table border="1" cellpadding="5" style="border-collapse:collapse;width:100%"><thead><tr><th>Date</th><th>Scenario</th><th>Score</th><th>User Response</th></tr></thead><tbody id="log-body"></tbody></table></div>
       <button onclick="startScenario()">🎤 Start Scenario</button>
     </section>
 
@@ -150,8 +129,6 @@
       });
 
       const score = Math.round((matchCount / expected.length) * 100);
-  logAttempt(currentScenario.label, score, spoken);
-  updateScoreHistory(currentScenario.label, score);
       document.getElementById("score").textContent = `Score: ${score}%`;
 
       const highlighted = expected.map(word =>
@@ -161,64 +138,6 @@
     }
 
     window.onload = () => synth.getVoices();
-  
-document.getElementById("scenario").addEventListener("change", function () {
-  const selected = this.value;
-  const scenario = scenarios.find(s => s.id === selected);
-  if (scenario) {
-    const hintText = scenario.expected.split(" ").slice(0, 4).join(" ");
-    document.getElementById("hints").innerText = "Hint: say something like \"" + hintText + "...\"";
-  }
-});
-
-
-function updateScoreHistory(label, score) {
-  let scores = JSON.parse(localStorage.getItem("scenarioScores")) || {};
-  scores[label] = score;
-  localStorage.setItem("scenarioScores", JSON.stringify(scores));
-  renderScoreHistory();
-}
-
-function renderScoreHistory() {
-  let scores = JSON.parse(localStorage.getItem("scenarioScores")) || {};
-  const list = Object.entries(scores)
-    .map(([scenario, score]) => `<li><strong>${scenario}:</strong> ${score}%</li>`)
-    .join("");
-  document.getElementById("score-list").innerHTML = list;
-}
-
-window.onload = function () {
-  renderScoreHistory();
-};
-
-
-function logAttempt(label, score, response) {
-  let log = JSON.parse(localStorage.getItem("instructorLog")) || [];
-  log.push({
-    date: new Date().toLocaleString(),
-    scenario: label,
-    score: score,
-    response: response
-  });
-  localStorage.setItem("instructorLog", JSON.stringify(log));
-  renderInstructorLog();
-}
-
-function renderInstructorLog() {
-  const enabled = document.getElementById("instructorMode").checked;
-  document.getElementById("instructor-log").style.display = enabled ? "block" : "none";
-
-  if (!enabled) return;
-
-  let log = JSON.parse(localStorage.getItem("instructorLog")) || [];
-  const rows = log.map(entry =>
-    `<tr><td>${entry.date}</td><td>${entry.scenario}</td><td>${entry.score}%</td><td>${entry.response}</td></tr>`
-  ).join("");
-  document.getElementById("log-body").innerHTML = rows;
-}
-
-document.getElementById("instructorMode").addEventListener("change", renderInstructorLog);
-
-</script>
-</div></body>
+  </script>
+</body>
 </html>
