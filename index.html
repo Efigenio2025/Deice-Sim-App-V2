@@ -6,8 +6,8 @@
   <title>Deice Verbiage Simulator</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link href="style.css" rel="stylesheet" />
-</head>
-<body>
+<style>body { font-family: "Segoe UI", Tahoma, sans-serif; background: #f4f7fa; margin: 0; padding: 20px; text-align: center; }#app { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }select, button, input[type="checkbox"] { padding: 10px; border-radius: 8px; border: 1px solid #ccc; font-size: 16px; margin: 10px 0; }#start-button { background: #007bff; color: white; border: none; cursor: pointer; transition: background 0.3s; border-radius: 50%; width: 60px; height: 60px; font-size: 24px; display: inline-flex; align-items: center; justify-content: center; }#start-button:hover { background: #0056b3; }#hints, #score, #score-history, #instructor-log { margin-top: 20px; text-align: left; }table { width: 100%; border-collapse: collapse; font-size: 14px; }th, td { padding: 8px; border: 1px solid #ddd; }.highlight-correct { background-color: #d4edda; }.highlight-missing { background-color: #fff3cd; }.highlight-incorrect { background-color: #f8d7da; }</style></head>
+<body><div id="app">
   <div class="container">
     <header>
       <h1>Deice Verbiage Trainer</h1>
@@ -201,5 +201,5 @@ function renderInstructorLog() {
 document.getElementById("instructorMode").addEventListener("change", renderInstructorLog);
 
 </script>
-</body>
+</div></body>
 </html>
