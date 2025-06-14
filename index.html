@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <link rel="manifest" href="manifest.json" />
+  <title>Deice Verbiage Simulator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2rem;
+      background: #f9f9f9;
+    }
+    .container {
+      background: white;
+      border-radius: 10px;
+      padding: 2rem;
+      max-width: 700px;
+      margin: auto;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    button, select {
+      padding: 0.7rem 1.5rem;
+      font-size: 1rem;
+      cursor: pointer;
+      margin-top: 1rem;
+    }
+    .feedback {
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+    #score {
+      margin-top: 1rem;
+      font-size: 1.2rem;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Deice Verbiage Simulator</h2>
+
+    <label for="scenario">Choose a Scenario:</label>
+    <select id="scenario" onchange="loadScenario()">
+      <option value="start">Start Deicing</option>
+      <option value="complete">Deice Complete</option>
+      <option value="type4">Anti-Ice Type IV</option>
+      <option value="type1">Anti-Ice Type I</option>
+      <option value="pto">Pre-Takeoff Contamination</option>
+    </select>
+
+    <p><strong>Prompt:</strong> <span id="prompt-text"></span></p>
+    <p><strong>Expected:</strong> <span id="expected-text"></span></p>
+
+    <button onclick="speakPrompt()">🔊 Read Prompt</button>
+    <button onclick="startRecognition()">🎤 Start Talking</button>
+    <p id="spoken-text"></p>
+    <div class="feedback" id="feedback"></div>
+    <div id="score"></div>
+<div id="missing" style="margin-top: 1rem;"></div>
+  </div>
+
+  <script>
+    const scenarios = {
+      start: {
+        prompt: "Contact the flight deck to begin deicing.",
+        expected: "Captain, please prepare the aircraft for deicing."
+      },
+      complete: {
+        prompt: "Inform captain deicing is complete.",
+        expected: "Captain, deicing complete. Post deicing check complete, deicing personnel and equipment are safely away."
+      },
+      type4: {
+        prompt: "Inform flight deck of Type IV application including time and brand.",
+        expected: "Captain, you have been anti-iced with Type IV, Clariant Safewing MP IV Launch at 100%, starting at 13:48. Post deicing/anti-icing check complete, deicing personnel and equipment are safely away."
+      },
+      type1: {
+        prompt: "Inform flight deck Type I was used as final step.",
+        expected: "Captain, you have been anti-iced with Type I Polar Plus LT, starting at 13:48. Post deicing/anti-icing check complete, deicing personnel and equipment are safely away."
+      },
+      pto: {
+        prompt: "Inform flight crew the Pre-Takeoff Contamination Check is complete.",
+        expected: "The Pre-Takeoff Contamination Check has been completed and the aircraft and engines are ready for departure."
+      }
+    };
+
+    let currentExpected = "";
+
+    function loadScenario() {
+      const selected = document.getElementById("scenario").value;
+      document.getElementById("prompt-text").innerText = scenarios[selected].prompt;
+      document.getElementById("expected-text").innerText = scenarios[selected].expected;
+      currentExpected = scenarios[selected].expected.toLowerCase();
+      document.getElementById("spoken-text").innerText = "";
+      document.getElementById("feedback").innerText = "";
+      document.getElementById("score").innerText = "";
+    }
+
+    function speakPrompt() {
+      const utterance = new SpeechSynthesisUtterance(document.getElementById("prompt-text").innerText);
+      utterance.lang = 'en-US';
+      const voices = window.speechSynthesis.getVoices();
+      const alex = voices.find(v => v.name.toLowerCase().includes("alex"));
+      if (alex) utterance.voice = alex;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function startRecognition() {
+      const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+      recognition.lang = 'en-US';
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      document.getElementById("feedback").innerText = "Listening...";
+      document.getElementById("score").innerText = "";
+
+      recognition.start();
+
+      recognition.onresult = function(event) {
+        const transcript = event.results[0][0].transcript.toLowerCase().trim();
+        document.getElementById("spoken-text").innerText = `You said: "${transcript}"`;
+        scoreResponse(transcript);
+      };
+
+      recognition.onerror = function(event) {
+        document.getElementById("feedback").innerText = `Error: ${event.error}`;
+      };
+    }
+
+    function scoreResponse(response) {
+      const clean = str => str.replace(/[^a-zA-Z0-9 ]/g, '').toLowerCase();
+      const expectedWords = clean(currentExpected).split(" ");
+      const responseWords = clean(response).split(" ");
+      let matchCount = 0;
+      expectedWords.forEach(word => {
+        if (responseWords.includes(word)) matchCount++;
+      });
+      const score = Math.round((matchCount / expectedWords.length) * 100);
+      const missingWords = expectedWords.filter(word => !responseWords.includes(word));
+      const feedbackText = score >= 80 ? "✅ Great job!" : "❌ Keep practicing.";
+      document.getElementById("missing").innerHTML = missingWords.length ? 
+        "<strong>Missing Words:</strong> " + missingWords.map(w => `<span style='color:red'>${w}</span>`).join(", ") : "";
+      document.getElementById("feedback").innerText = feedbackText;
+      document.getElementById("score").innerText = `Score: ${score}%`;
+    }
+
+    // Auto-load first scenario on load
+    window.onload = loadScenario;
+  </script>
+</body>
+</html>
